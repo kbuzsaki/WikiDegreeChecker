@@ -1,3 +1,5 @@
+package com.kbuzsaki.degreechecker;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,9 +30,8 @@ public final class WikiPage {
     private static final String mediaWikiStarter = "http://en.wikipedia.org/w/"
             + "api.php?action=query&prop=revisions&rvprop=content&format=xml&titles=";
     private static final int NOT_CALCULATED = -1;
-    private static final Map<String, WikiPage> pageCache = new HashMap<>(); 
     
-    private static final WikiPage target = getWikiPage("adolf_hitler");
+    private WikiPageFactory associatedFactory;
     
     private String pageTitle;
     private URL pageUrl;
@@ -39,18 +40,8 @@ public final class WikiPage {
     
     private WikiPage parent = null;
     
-    public static WikiPage getWikiPage(String pageTitle) {
-        if(pageCache.containsKey(pageTitle)) {
-            return pageCache.get(pageTitle);
-        }
-        else {
-            WikiPage page = new WikiPage(pageTitle);
-            pageCache.put(pageTitle, page);
-            return page;
-        }
-    }
-    
-    private WikiPage(String pageTitle) {
+    WikiPage(WikiPageFactory associatedFactory, String pageTitle) {
+        this.associatedFactory = associatedFactory;
         try {
             this.pageTitle = pageTitle;
             pageUrl = new URL(mediaWikiStarter + pageTitle);
@@ -87,7 +78,7 @@ public final class WikiPage {
         
         Set<String> pageTitles = getPageTitles(getPageText());
         for(String pageTitle : pageTitles) {
-            tempLinkedPages.add(getWikiPage(pageTitle));
+            tempLinkedPages.add(associatedFactory.getWikiPage(pageTitle));
         }
         
         linkedPages = Collections.unmodifiableSet(tempLinkedPages);
@@ -112,7 +103,7 @@ public final class WikiPage {
     }
     
     public boolean isAdjacentToTarget() {
-        return getLinkedPages().contains(target);
+        return getLinkedPages().contains(associatedFactory.getTarget());
     }
     
     public int getDistanceFromTarget() {
@@ -123,7 +114,7 @@ public final class WikiPage {
             pathToTarget = calculatePathToTarget();
         }
         List<WikiPage> path = new ArrayList<>(pathToTarget);
-        path.add(target);
+        path.add(associatedFactory.getTarget());
         return path;
     }
     private boolean isPathCalculated() {
